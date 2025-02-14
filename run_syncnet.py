@@ -27,14 +27,21 @@ def main(opt, filename=None):
         "statusMessage": "No processed video detected. Please check the input video whether it meets the requirements, e.g. the face can be always detected in each video frame.",
     }
 
+    if len(flist) == 0:
+        if filename is not None:
+            with open(filename, 'w') as f:
+                f.write(json.dumps(conscent_video_info, indent=4))
+            f.close()
+        return conscent_video_info
+
     # ==================== GET OFFSETS ====================
 
     dists = []
     for idx, fname in enumerate(flist):
-        offset, conf, dist, min_dist = s.evaluate(opt, videofile=fname)
-        dists.append(dist)
+        try:
+            offset, conf, dist, min_dist = s.evaluate(opt, videofile=fname)
+            dists.append(dist)
 
-        if filename is not None:            
             conscent_video_info.update({
                 "videoFileName": opt.videofile,
                 "timeStamp": datetime.now(timezone.utc).strftime("UTC-0: %Y-%m-%d-%H-%M-%S"),
@@ -45,7 +52,13 @@ def main(opt, filename=None):
                 "status": True,
                 "statusMessage": "Success"
             })
-            
+        except Exception as e:
+            conscent_video_info.update({
+                "status": False,
+                "statusMessage": f"Can't get lipsync scores using SyncNet."
+            })
+
+        if filename is not None:            
             # with open(filename, 'a') as f:
             #     f.write("%s %f %f %f %f %f %f\n" % (opt.videofile, offset, conf, dist.min(), dist.max(), dist.mean(), numpy.median(dist)))
             # f.close()
